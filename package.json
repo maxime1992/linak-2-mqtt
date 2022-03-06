@@ -1,0 +1,13 @@
+{
+  "name": "linak-2-mqtt",
+  "version": "0.0.0",
+  "main": "index.js",
+  "author": "Maxime Robert <maxime.robert1992@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "mqtt": "^4.3.6",
+    "rxjs": "^7.5.4",
+    "yaml": "^1.10.2"
+  }
+}

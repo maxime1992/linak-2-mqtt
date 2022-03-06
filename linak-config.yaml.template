@@ -1,0 +1,10 @@
+mac_address: MAC_ADDRESS_OF_YOUR_BLUETOOTH_DEVICE
+stand_height: 1200
+sit_height: 730
+height_tolerance: 2.0
+scan_timeout: 5
+connection_timeout: 10
+movement_timeout: 30
+adapter_name: hci0
+server_address: '127.0.0.1'
+server_port: 9123
