@@ -1,4 +1,4 @@
-FROM ubuntu
+FROM ubuntu:focal
 
 RUN apt update -y && apt upgrade -y
 
