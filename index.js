@@ -50,8 +50,8 @@ const connected$ = new Subject();
 connected$
   .pipe(
     tap(() => {
-      console.log('triggering monitor..');
-      spawn('idasen-controller', ['--forward', '--monitor']);
+      console.log('triggering watch..');
+      spawn('idasen-controller', ['--forward', '--watch']);
     })
   )
   .subscribe();
@@ -96,7 +96,7 @@ mqttDeskPositionCm$
           console.log(
             'Ping to get the height and make sure the desk appears as connected'
           );
-          spawn('idasen-controller', ['--forward', '--monitor']);
+          spawn('idasen-controller', ['--forward', '--watch']);
         }),
         repeat()
       )
