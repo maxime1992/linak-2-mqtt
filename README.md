@@ -102,19 +102,17 @@ That's why we've got a little bit of configuration to make on Home Assistant in 
 - Open your HA config file `/config/configuration.yaml` and either create or update your `sensor` and `binary_sensor` lists with the following:
 
 ```yaml
-sensor:
-  - platform: mqtt
-    name: 'linak_desk_height'
-    state_topic: 'linak-2-mqtt/desk-relative-height-updated'
-
-binary_sensor:
-  - platform: mqtt
-    name: is_desk_available
-    state_topic: 'linak-2-mqtt/desk-relative-height-updated'
-    off_delay: 100
-    value_template: "{{ 'online' }}"
-    payload_on: 'online'
-    payload_off: 'offline'
+mqtt:
+  sensor:
+    - name: linak_desk_height
+      state_topic: 'linak-2-mqtt/desk-relative-height-updated'
+  binary_sensor:
+    - name: is_desk_available
+      state_topic: 'linak-2-mqtt/desk-relative-height-updated'
+      off_delay: 100
+      value_template: "{{ 'online' }}"
+      payload_on: 'online'
+      payload_off: 'offline'
 ```
 
 On your dashboard, we'll now create a new card:
