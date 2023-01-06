@@ -12,7 +12,7 @@ RUN apt install bluez -y
 
 RUN apt install build-essential libglib2.0-dev libical-dev libreadline-dev libudev-dev libdbus-1-dev libdbus-glib-1-dev bluetooth libbluetooth-dev usbutils -y
 
-RUN pip3 install idasen-controller==2.0.0
+RUN pip3 install idasen-controller==2.0.1
 
 RUN apt install curl -y
 
