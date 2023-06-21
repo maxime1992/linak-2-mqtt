@@ -41,6 +41,8 @@ const mqttConnect$ = new Observable((observer) => {
   client.on('connect', () => {
     client.subscribe('linak-2-mqtt/set-desk-height');
     client.subscribe('linak-2-mqtt/toggle-desk-position');
+  //  client.subscribe('linak-2-mqtt/last-update');
+    client.subscribe('linak-2-mqtt/sitting-status');
     observer.next();
   });
 }).pipe(shareReplay(1));
@@ -68,6 +70,36 @@ const mqttDeskPositionCm$ = mqttDeskPositionMm$.pipe(
   shareReplay(1)
 );
 
+
+var last_updated=Math.floor(Date.now()/1000/60)
+var need_update=0
+
+var intervalId = setInterval(function() {
+  //console.log("Interval reached every 15m")
+  //console.log("last_updated: " + last_updated)
+
+  var now = Math.floor(Date.now()/1000/60)
+  //console.log("now "+ now)
+  var difference = now-last_updated
+  //console.log("Difference min:" + difference)
+
+
+  if(difference > 60 ) {
+	client.publish(
+		`linak-2-mqtt/need-update`,
+		'1'
+	);
+  }else{
+	client.publish(
+		`linak-2-mqtt/need-update`,
+		'0'
+	);
+  }
+
+}, 60000);//Check every minute;
+
+var sitting_status = 'NA'
+var tolerance = 5;
 mqttDeskPositionCm$
   .pipe(
     tap((heightCm) => {
@@ -84,6 +116,25 @@ mqttDeskPositionCm$
         `linak-2-mqtt/desk-relative-height-updated`,
         (heightCm - +process.env.DESK_LOWEST_HEIGHT_CM).toString()
       );
+
+      //client.publish(
+      // `linak-2-mqtt/last-update`,
+      //  last_updated.toString()
+      //);
+
+      if(heightCm > linakConfigYamlParsed.stand_height/10 - tolerance){
+        sitting_status = "Standing"
+      }else if (heightCm < linakConfigYamlParsed.sit_height/10 + tolerance){
+        sitting_status = "Sitting"
+      }
+      //console.log("heightCm: "+heightCm)
+      //console.log("Standing threshold: " + linakConfigYamlParsed.stand_height/10-tolerance);
+      //console.log("Sitting threshold: " + linakConfigYamlParsed.sit_height/10-tolerance);
+      //console.log("Sitting status: "+ sitting_status);
+      client.publish(
+       `linak-2-mqtt/sitting-status`,
+        sitting_status
+      );
     })
   )
   .subscribe();
@@ -91,7 +142,7 @@ mqttDeskPositionCm$
 mqttDeskPositionCm$
   .pipe(
     switchMap(() =>
-      timer(60_000).pipe(
+      timer(6_000).pipe(
         tap(() => {
           console.log(
             'Ping to get the height and make sure the desk appears as connected'
@@ -138,6 +189,8 @@ mqttSetHeightCommand$
       const heightMm = heightCm * 10;
       console.log(`Attempt to move desk to ${heightCm}cm`);
       spawn('idasen-controller', ['--forward', '--move-to', heightMm]);
+
+      last_updated=Math.floor(Date.now()/1000/60)
     })
   )
   .subscribe();

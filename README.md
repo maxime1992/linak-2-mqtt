@@ -106,6 +106,12 @@ mqtt:
   sensor:
     - name: linak_desk_height
       state_topic: 'linak-2-mqtt/desk-relative-height-updated'
+    - name: linak_desk_absolute_height
+      state_topic: 'linak-2-mqtt/desk-absolute-height-updated'
+    - name: desk_need_update
+      state_topic: 'linak-2-mqtt/need-update'
+    - name: desk_sitting_status
+      state_topic: 'linak-2-mqtt/sitting-status'
   binary_sensor:
     - name: is_desk_available
       state_topic: 'linak-2-mqtt/desk-relative-height-updated'
@@ -275,7 +281,6 @@ Here's an example of complete dashboard:
           name: Is today a work day?
           icon: mdi:office-building
       state_color: false
-```
 
 # Troubleshooting issues
 
@@ -307,3 +312,97 @@ Either:
 # Useful links
 
 - https://github.com/rhyst/idasen-controller/issues/42#issuecomment-1059736659
+
+# Linak DPG1C integration and keep alive routine
+
+In order to use it with the Linak DPG1C there are some caveats. A new MQTT topics has been added:
+- linak-2-mqtt/need-update
+
+As the DPG1C *needs* a wake up command that, at the time of writing, has not been implemented on the idasen server, an automation has to be done. It seems that a wake up command needs to be sended once every three hours in order to keep the connection alive. So, to do that, some logic has been added:
+
+- if the mqttSetHeightCommand is been triggered, the time is stored in last_updated variable
+- then periodicaly the difference between last_updated and now is calculated. If that time is greater than 1h the topic linak-2-mqtt/need-update is set to 1.
+
+In HA (for example) we need to create an automation to move the desk from the bluetooth controller to keep the connection alive when the need-update topic is 1:
+
+```
+alias: Keep Desk alive
+description: ""
+trigger:
+  - platform: mqtt
+    topic: linak-2-mqtt/need-update
+    payload: "1"
+condition: []
+action:
+  - service: mqtt.publish
+    data:
+      qos: 0
+      retain: false
+      topic: linak-2-mqtt/set-desk-height
+      payload_template: "{{(int(states('sensor.linak_desk_absolute_height')))-1}}"
+  - delay:
+      hours: 0
+      minutes: 0
+      seconds: 5
+      milliseconds: 0
+  - service: mqtt.publish
+    data:
+      qos: 0
+      retain: false
+      topic: linak-2-mqtt/set-desk-height
+      payload_template: "{{(int(states('sensor.linak_desk_absolute_height')))+1}}"
+mode: single
+```
+
+# Keep track of Sitting vs Standing status
+
+A routine has been implemented to publish to linak-2-mqtt/sitting-status if the desk is standing or sitting position.
+
+```
+if(heightCm > linakConfigYamlParsed.stand_height/10 - tolerance){
+  sitting_status = "Standing"
+}else if (heightCm < linakConfigYamlParsed.sit_height/10 + tolerance){
+  sitting_status = "Sitting"
+}
+client.publish(
+ `linak-2-mqtt/sitting-status`,
+  sitting_status
+);
+```
+
+Tolerance variable is set to 5cm. #TODO: Move it to .env file?
+
+Then in HA configuration.yaml we can create some sensors:
+```
+sensor:
+  - platform: history_stats
+    name: Desk sitting time
+    entity_id: sensor.desk_sitting_status
+    state: "Sitting"
+    type: time
+    start: "{{ now().replace(hour=7, minute=30, second=0) }}"
+    end: "{{ now().replace(hour=17, minute=0, second=0) }}"  
+  - platform: history_stats
+    name: Desk standing time
+    entity_id: sensor.desk_sitting_status
+    state: "Standing"
+    type: time
+    start: "{{ now().replace(hour=7, minute=30, second=0) }}"
+    end: "{{ now().replace(hour=17, minute=0, second=0) }}"  
+  - platform: history_stats
+    name: Desk standing ratio
+    entity_id: sensor.desk_sitting_status
+    state: "Standing"
+    type: ratio
+    start: "{{ now().replace(hour=7, minute=30, second=0) }}"
+    end: "{{ now().replace(hour=17, minute=0, second=0) }}"     
+  - platform: history_stats
+    name: Desk sitting ratio
+    entity_id: sensor.desk_sitting_status
+    state: "Sitting"
+    type: ratio
+    start: "{{ now().replace(hour=7, minute=30, second=0) }}"
+    end: "{{ now().replace(hour=17, minute=0, second=0) }}"  
+```
+
+Note that this only keeps track of the sitting vs standing times and ratio from 7:30 to 5 which are mine working hours. Please change it to yours :)
