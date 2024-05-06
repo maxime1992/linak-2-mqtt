@@ -12,20 +12,24 @@ RUN apt install bluez -y
 
 RUN apt install build-essential libglib2.0-dev libical-dev libreadline-dev libudev-dev libdbus-1-dev libdbus-glib-1-dev bluetooth libbluetooth-dev usbutils -y
 
+RUN export SKIP_CYTHON=false
+
 RUN pip3 install idasen-controller==2.2.0
 
-RUN apt install curl -y
+RUN apt-get update
+
+RUN apt-get install curl -y
 
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
 
-RUN apt install nodejs -y
+RUN apt-get install nodejs -y
 
 COPY package.json /
 
 RUN npm i
 
 # following is needed as it installs the `unbuffer` command
-RUN apt install expect -y
+RUN apt-get install expect -y
 
 COPY run.sh /
 COPY index.js /
