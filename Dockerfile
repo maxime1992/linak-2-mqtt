@@ -12,6 +12,7 @@ RUN apt install bluez -y
 
 RUN apt install build-essential libglib2.0-dev libical-dev libreadline-dev libudev-dev libdbus-1-dev libdbus-glib-1-dev bluetooth libbluetooth-dev usbutils -y
 
+# fix of the issue on dbus-fast that was making the build stuck. [https://github.com/Bluetooth-Devices/dbus-fast/issues/237]
 RUN export SKIP_CYTHON=false
 
 RUN pip3 install idasen-controller==2.2.0
